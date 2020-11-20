@@ -9,7 +9,7 @@ SPECIAL_CHARACTERS = ["-", "~", '/', '...']
 
 def data_clean(file):
 	f_out = open('open_subtitles_small_clean.txt', 'w+')
-	with open(file, 'r') as f:
+	with open(file, 'r', encoding="utf-8") as f:
 		count = 0
 		lines = f.readlines()
 		start = time.time()
@@ -23,6 +23,7 @@ def data_clean(file):
 				if len(tokens) < 2:
 					count += 1
 					continue
+
 				f_out.write(line.lower())
 		print(time.time() - start)
 		print(count)
