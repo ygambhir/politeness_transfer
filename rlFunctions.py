@@ -15,7 +15,6 @@ import spacy
 import time
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 from tqdm import tqdm
-from nlp import load_dataset
 import torch
 
 #######################################################################
@@ -43,8 +42,8 @@ clf.accuracy(test_corpus)
 # LOAD GPT2 FOR PERPLEXITY CALCULATION
 #######################################################################
 
-device = 'cuda'
-model_id = 'gpt2-large'
+device = 'cpu'
+model_id = 'gpt2-medium'
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
 
@@ -86,14 +85,10 @@ def perplexityCalc(current):
 #######################################################################
 
 def rlScore(original, current):
+	w_pol = 1000
+	w_similarity = 100
+	w_lm = .1
 	polite = predictText(current, clf, ps, sp)
 	similarity = pairwiseSimilarity(original, current)
 	perplexity = perplexityCalc(current)
-	return [polite[1], similarity, perplexity]
-
-while True:
-	o = input("Original: ")
-	over = input("Current: ")
-	print(rlScore(o, over))
-
-
+	return w_pol*polite + w_similarity*similarity + w_lm*perplexity*-1
