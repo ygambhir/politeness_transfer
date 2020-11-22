@@ -1,5 +1,6 @@
 from better_profanity import profanity
 import time
+from tqdm import tqdm
 
 
 from convokit import Corpus, download
@@ -12,9 +13,11 @@ def data_clean(file):
 	with open(file, 'r') as f:
 		count = 0
 		lines = f.readlines()
-		start = time.time()
-		for line in lines:
+		print("Processing")
+		for line in tqdm(lines):
+			start = time.time()
 			if profanity.contains_profanity(line):
+				print(line)
 				count += 1
 			else:
 				for char in SPECIAL_CHARACTERS:
@@ -24,7 +27,6 @@ def data_clean(file):
 					count += 1
 					continue
 				f_out.write(line.lower())
-		print(time.time() - start)
 		print(count)
 
 
