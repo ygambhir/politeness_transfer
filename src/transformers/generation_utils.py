@@ -436,7 +436,7 @@ class GenerationMixin:
         num_return_sequences = (
             num_return_sequences if num_return_sequences is not None else self.config.num_return_sequences
         )
-
+        print('in generate')
         pad_token_id = pad_token_id if pad_token_id is not None else self.config.pad_token_id
         bos_token_id = bos_token_id if bos_token_id is not None else self.config.bos_token_id
         eos_token_id = eos_token_id if eos_token_id is not None else self.config.eos_token_id

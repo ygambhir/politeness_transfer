@@ -21,12 +21,12 @@ import os
 import warnings
 from dataclasses import dataclass
 from typing import Optional, Tuple
-
+import numpy as np
 import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
-from rlFunctions import rlScore
+from rlFunctionsBatch import rlScore
 from .activations import ACT2FN
 from .configuration_bert import BertConfig
 from .file_utils import (
@@ -1073,23 +1073,15 @@ class BertLMHeadModel(BertPreTrainedModel):
         next_tokens = next_tokens.view(N,L)
         decoded_strs = []
         input_strs = []
-        print('input shape', input_ids.shape)
         for i in range(N):
             decoded_strs.append(tokenizer.decode(next_tokens[i], skip_special_tokens=True))
             input_strs.append(tokenizer.decode(input_ids[i], skip_special_tokens=True))
-        print(decoded_strs)
-        print(input_strs)
         # Note: Modify the forward pass to take in string
+        print('decoded strings', decoded_strs)
         s = time.time()
-        rewards = []
-        print("N", N)
-        print("L", L)
-        for j in range(N):
-            reward = rlScore(input_strs[j], decoded_strs[j])[0]
-            rewards.append(reward)
+        reward = rlScore(np.array(input_strs), np.array(decoded_strs))
         print('time for reward', time.time() - s)
-        print(rewards)
-
+        print(reward)
         if labels is not None:
             # we are doing next-token prediction; shift prediction scores and input ids by one
             shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
@@ -1098,7 +1090,7 @@ class BertLMHeadModel(BertPreTrainedModel):
                 reward = calculate_reward(prediction_scores)
                 prediction_scores += torch.abs(torch.min(p_scores))
                 prediction_scores = prediction_scores.clamp(min=eps)
-                lm_loss = torch.sum(torch.log(prediction_scores)*torch.tensor(rewards))
+                lm_loss = torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward))
             else:
                 labels = labels[:, 1:].contiguous()
                 loss_fct = CrossEntropyLoss()
