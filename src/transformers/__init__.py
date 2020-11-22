@@ -110,11 +110,13 @@ from .file_utils import (
     is_py3nvml_available,
     is_sentencepiece_available,
     is_sklearn_available,
-    is_tf_available,
     is_tokenizers_available,
     is_torch_available,
     is_torch_tpu_available,
 )
+
+def is_tf_available():
+    return False
 from .hf_argparser import HfArgumentParser
 
 # Model Cards

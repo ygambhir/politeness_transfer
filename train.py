@@ -31,9 +31,23 @@ optimizer = optim.AdamW(model.parameters(), lr=5e-5)
 # optimizer.step()
 # print('loss and gradient update', time.time() - loss_s)
 
+class PoliteDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
 
-train_dataset = torch.load('open_subtitles_small_encoded.pt')
-tloader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        return item
+
+    def __len__(self):
+        return len(self.encodings.input_ids)
+
+
+train_dataset = torch.load('open_subtitles_small_encoded_train.pt')
+test_dataset = torch.load('open_subtitles_small_encoded_test.pt')
+
+trainloader = DataLoader(PoliteDataset(train_dataset), batch_size=60, shuffle=True)
+testloader =DataLoader(PoliteDataset(test_dataset), batch_size=60, shuffle=True)
 
 
 def train_model(model, train_loader, optimizer, epochs):
@@ -43,9 +57,21 @@ def train_model(model, train_loader, optimizer, epochs):
 	        input_ids = batch['input_ids'].to(device)
 	        attention_mask = batch['attention_mask'].to(device)
 	        labels = 1
-	        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+	        outputs = model(input_ids, decoder_input_ids=input_ids, decoder_attention_mask=attention_mask, tokenizer=tokenizer, attention_mask=attention_mask, labels=labels)
 	        loss = outputs[0]
+	        loss = Variable(loss, requires_grad = True)
 	        loss.backward()
-	        optim.step()
+	        optimizer.step()
 
-train_model(model, tloader, optimizer, 3)
+# def test_model(model, train_loader, optimizer, epochs):
+# 	for epoch in range(epochs):
+# 	    for batch in train_loader:
+# 	        optimizer.zero_grad()
+# 	        input_ids = batch['input_ids'].to(device)
+# 	        attention_mask = batch['attention_mask'].to(device)
+# 	        labels = 1
+# 	        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+# 	        loss = outputs[0]
+
+train_model(model, trainloader, optimizer, 3)
+# test_model()
