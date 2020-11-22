@@ -45,7 +45,7 @@ clf.accuracy(test_corpus)
 # LOAD GPT2 FOR PERPLEXITY CALCULATION
 #######################################################################
 
-device = 'cuda'
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model_id = 'gpt2-medium'
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
