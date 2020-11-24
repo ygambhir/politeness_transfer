@@ -1,0 +1,1 @@
+Epoch 0 loss 11081538.0Epoch 1 loss 11109739.0Epoch 2 loss 11188374.0Epoch 3 loss 11230969.0Epoch 4 loss 11393255.0Epoch 5 loss 11520872.0Epoch 6 loss 10856235.0Epoch 7 loss 11412080.0Epoch 8 loss 11159939.0

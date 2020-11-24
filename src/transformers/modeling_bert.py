@@ -1090,7 +1090,7 @@ class BertLMHeadModel(BertPreTrainedModel):
                 reward = calculate_reward(prediction_scores)
                 prediction_scores += torch.abs(torch.min(p_scores))
                 prediction_scores = prediction_scores.clamp(min=eps)
-                lm_loss = torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward))
+                lm_loss = torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward))/N
             else:
                 labels = labels[:, 1:].contiguous()
                 loss_fct = CrossEntropyLoss()
