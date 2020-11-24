@@ -13,7 +13,7 @@ from scipy.sparse import csr_matrix
 from sklearn.metrics import classification_report
 import spacy
 import time
-from transformers import GPT2LMHeadModel, GPT2TokenizerFast
+from transformers import GPT2TokenizerFast, GPT2LMHeadModel
 from tqdm import tqdm
 import torch
 from fuzzywuzzy import fuzz
@@ -45,7 +45,7 @@ clf.accuracy(test_corpus)
 # LOAD GPT2 FOR PERPLEXITY CALCULATION
 #######################################################################
 
-device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+device = 'cpu'
 model_id = 'gpt2-medium'
 model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)

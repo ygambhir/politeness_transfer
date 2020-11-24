@@ -1074,14 +1074,14 @@ class BertLMHeadModel(BertPreTrainedModel):
         decoded_strs = []
         input_strs = []
         for i in range(N):
-            decoded_strs.append(tokenizer.decode(next_tokens[i], skip_special_tokens=True))
+            decode_str = tokenizer.decode(next_tokens[i], skip_special_tokens=True).replace('.', '').replace(';', '')
+            decoded_strs.append(decode_str)
             input_strs.append(tokenizer.decode(input_ids[i], skip_special_tokens=True))
         # Note: Modify the forward pass to take in string
-        print('decoded strings', decoded_strs)
         s = time.time()
         reward = rlScore(np.array(input_strs), np.array(decoded_strs))
-        print('time for reward', time.time() - s)
-        print(reward)
+        #print('time for reward', time.time() - s)
+        #print(reward)
         if labels is not None:
             # we are doing next-token prediction; shift prediction scores and input ids by one
             shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()

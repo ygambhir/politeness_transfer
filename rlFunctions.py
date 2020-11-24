@@ -16,7 +16,7 @@ import time
 from transformers import GPT2LMHeadModel, GPT2TokenizerFast
 from tqdm import tqdm
 import torch
-
+import time
 #######################################################################
 # LOAD AND TRAIN POLITE CLASSIFIER
 #######################################################################
@@ -88,7 +88,13 @@ def rlScore(original, current):
 	w_pol = 1000
 	w_similarity = 100
 	w_lm = .1
+	s = time.time()
 	polite = predictText(current, clf, ps, sp)
+	p = time.time()
+	print('politeness classifier', time.time() - s)
 	similarity = pairwiseSimilarity(original, current)
+	sim = time.time()
+	print('sim time', time.time() - p)
 	perplexity = perplexityCalc(current)
+	print('perplexity time', time.time() - sim)
 	return w_pol*polite + w_similarity*similarity + w_lm*perplexity*-1

@@ -11,30 +11,30 @@ tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
 config = BertConfig.from_pretrained("bert-base-uncased")
 config.is_decoder = True
 model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-base-uncased', 'bert-base-uncased') # initialize Bert2Bert from pre-trained checkpoints
-model.to(device)
 for param in model.base_model.parameters():
 	param.requires_grad = False
 optimizer = optim.AdamW(model.parameters(), lr=5e-5)
 
-# input_ids = torch.tensor(tokenizer.encode("What is all the name of the players, I'm still unsure. Who knows? ", add_special_tokens=True)).unsqueeze(0)  # Batch size 1
-# i_ids = torch.tensor(tokenizer.encode("What is all the name of the players, I'm still not sure ", add_special_tokens=True)).unsqueeze(0) 
-# batch_input = torch.cat([input_ids, input_ids, input_ids])
-# print(batch_input.shape)
-# optimizer.zero_grad()
-# label_outputs = torch.tensor(tokenizer.encode("name ", add_special_tokens=True)).unsqueeze(0)
-# outputs = model(input_ids=batch_input, decoder_input_ids=batch_input, labels=label_outputs, tokenizer=tokenizer)
-# loss = outputs[0]
-# print(outputs[0])
-# loss = Variable(loss, requires_grad = True)
-# loss_s = time.time()
-# loss.backward()
-# optimizer.step()
-# print('loss and gradient update', time.time() - loss_s)
+strings = ["Man you're mean and awful! I can't wait to get rid of this plan", "Who is the"]
 
+encoded = tokenizer.batch_encode_plus(strings, pad_to_max_length=True)
 
-train_dataset = torch.load('open_subtitles_small_encoded.pt')
-tloader = DataLoader(train_dataset, batch_size=128, shuffle=True)
+optimizer = optim.AdamW(model.parameters(), lr=5e-5)
+input_ids = torch.tensor(tokenizer.encode("What is all the name of the players, I'm still unsure. Who knows? ", add_special_tokens=True)).unsqueeze(0)  # Batch size 1
+i_ids = torch.tensor(tokenizer.encode("What is all the name of the players, I'm still not sure ", add_special_tokens=True)).unsqueeze(0) 
+batch_input = torch.cat([input_ids, input_ids, input_ids])
 
+optimizer.zero_grad()
+label_outputs = torch.tensor(tokenizer.encode("name ", add_special_tokens=True)).unsqueeze(0)
+outputs = model(input_ids=torch.tensor(encoded['input_ids']), attention_mask=torch.tensor(encoded['attention_mask']), decoder_input_ids=torch.tensor(encoded['input_ids']), decoder_attention_mask=torch.tensor(encoded['attention_mask']), labels=label_outputs, tokenizer=tokenizer)
+loss = outputs[0]
+print(loss)
+
+loss = Variable(loss, requires_grad = True)
+loss_s = time.time()
+loss.backward()
+optimizer.step()
+print('loss and gradient update', time.time() - loss_s)
 
 def train_model(model, train_loader, optimizer, epochs):
 	for epoch in range(epochs):
@@ -48,4 +48,4 @@ def train_model(model, train_loader, optimizer, epochs):
 	        loss.backward()
 	        optim.step()
 
-train_model(model, tloader, optimizer, 3)
+#train_model(model, tloader, optimizer, 3)
