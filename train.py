@@ -11,6 +11,9 @@ tokenizer = BertTokenizerFast.from_pretrained('bert-base-uncased')
 config = BertConfig.from_pretrained("bert-base-uncased")
 config.is_decoder = True
 model = EncoderDecoderModel.from_encoder_decoder_pretrained('bert-base-uncased', 'bert-base-uncased') # initialize Bert2Bert from pre-trained checkpoints
+model.to(device)
+model.train()
+
 for param in model.base_model.parameters():
 	param.requires_grad = False
 optimizer = optim.AdamW(model.parameters(), lr=5e-5)
@@ -36,16 +39,49 @@ loss.backward()
 optimizer.step()
 print('loss and gradient update', time.time() - loss_s)
 
+class PoliteDataset(torch.utils.data.Dataset):
+    def __init__(self, encodings):
+        self.encodings = encodings
+
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        return item
+
+    def __len__(self):
+        return len(self.encodings.input_ids)
+
+
+train_dataset = torch.load('open_subtitles_small_encoded_train.pt')
+test_dataset = torch.load('open_subtitles_small_encoded_test.pt')
+
+trainloader = DataLoader(PoliteDataset(train_dataset), batch_size=40, shuffle=True)
+testloader = DataLoader(PoliteDataset(test_dataset), batch_size=40, shuffle=True)
+
 def train_model(model, train_loader, optimizer, epochs):
+	file = open('logFirst.txt', 'w')
 	for epoch in range(epochs):
 	    for batch in train_loader:
 	        optimizer.zero_grad()
 	        input_ids = batch['input_ids'].to(device)
 	        attention_mask = batch['attention_mask'].to(device)
 	        labels = 1
-	        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+	        outputs = model(input_ids, decoder_input_ids=input_ids, decoder_attention_mask=attention_mask, tokenizer=tokenizer, attention_mask=attention_mask, labels=labels)
 	        loss = outputs[0]
+	        print(f'Loss: {loss}')
+	        loss = Variable(loss, requires_grad = True)
 	        loss.backward()
-	        optim.step()
+	        optimizer.step()
+	    file.write(f'Epoch {epoch} loss {loss}')
 
-#train_model(model, tloader, optimizer, 3)
+# def test_model(model, train_loader, optimizer, epochs):
+# 	for epoch in range(epochs):
+# 	    for batch in train_loader:
+# 	        optimizer.zero_grad()
+# 	        input_ids = batch['input_ids'].to(device)
+# 	        attention_mask = batch['attention_mask'].to(device)
+# 	        labels = 1
+# 	        outputs = model(input_ids, attention_mask=attention_mask, labels=labels)
+# 	        loss = outputs[0]
+
+train_model(model, trainloader, optimizer, 10)
+# test_model()

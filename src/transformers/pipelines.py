@@ -33,7 +33,7 @@ import numpy as np
 from .configuration_auto import AutoConfig
 from .configuration_utils import PretrainedConfig
 from .data import SquadExample, squad_convert_examples_to_features
-from .file_utils import add_end_docstrings, is_tf_available, is_torch_available
+from .file_utils import add_end_docstrings, is_torch_available
 from .modelcard import ModelCard
 from .tokenization_auto import AutoTokenizer
 from .tokenization_bert import BasicTokenizer
@@ -41,6 +41,8 @@ from .tokenization_utils import PreTrainedTokenizer
 from .tokenization_utils_base import PaddingStrategy
 from .utils import logging
 
+def is_tf_available():
+    return False
 
 if is_tf_available():
     import tensorflow as tf

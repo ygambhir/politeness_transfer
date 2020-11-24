@@ -18,6 +18,7 @@ from tqdm import tqdm
 import torch
 from fuzzywuzzy import fuzz
 import time
+from torch.nn import CrossEntropyLoss
 
 
 #######################################################################
@@ -47,7 +48,7 @@ clf.accuracy(test_corpus)
 
 device = 'cpu'
 model_id = 'gpt2-medium'
-model = GPT2LMHeadModel.from_pretrained(model_id).to(device)
+model = GPT2LMHeadModel.from_pretrained(model_id, return_dict=True).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
 tokenizer.pad_token=tokenizer.eos_token
 
@@ -94,9 +95,9 @@ def perplexityCalc(current):
 	input_ids = encodings.input_ids.to(device)
 	mask = encodings.attention_mask.to(device)
 
-	with torch.no_grad():
-		outputs = model(input_ids, labels=input_ids, attention_mask = mask)
-		log_likelihood = outputs[0]
+	# with torch.no_grad():
+	outputs = model(input_ids, labels=input_ids, attention_mask = mask)
+	log_likelihood = outputs[0]
 	ppl = torch.exp(log_likelihood)
 
 	return ppl.item()
@@ -117,6 +118,20 @@ def perplexityCalcBatch(current):
 
 	return np.array(results)
 
+def perplexityCalcBatchTest(current):
+	test = current#['Hello from my side I must have called two thousand times','Pee pee oop lol poo poo','I just want to sip till the pain wears off', 'Hello world hello world hello world hello world','Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.']
+	results = []
+	encodings = tokenizer(test, return_tensors='pt', padding=True)
+	input_ids = encodings.input_ids.to(device)
+	mask = encodings.attention_mask.to(device)
+	with torch.no_grad():
+		loss_fct = CrossEntropyLoss(reduction='none')
+		outputs = model(input_ids, attention_mask = mask)
+		loss= loss_fct(outputs.logits.view(-1, outputs.logits.size(-1), outputs.logits.size(-2)), input_ids)
+		loss2 = loss.mean(axis=1)
+
+	return loss2.to(torch.device('cpu')).numpy()
+
 
 #######################################################################
 # RL REWARD FUNCTION
@@ -126,16 +141,34 @@ def rlScore(original, current):
 	w_pol = 1000
 	w_similarity = 1/100
 	w_lm = .1
-	t0=time.time()
 	polite = predictTextBatch(current.tolist(), clf, ps, sp)
 	similarity = pairwiseSimilarityBatch(original, current)
-	perplexity = perplexityCalcBatch(current.tolist())
+	perplexity = perplexityCalcBatchTest(current.tolist())
+	# print(f'Reward polite: {polite}, sim: {similarity}, perplexity:{perplexity}, total: {polite + w_similarity*similarity + 100/perplexity}, time: {t1-t0}\n')
+	return polite + w_similarity*similarity + 100/perplexity
+
+def rlScoreTest(original, current):
+	w_pol = 1000
+	w_similarity = 1/100
+	w_lm = .1
+	t0=time.time()
+	polite = predictTextBatch(current.tolist(), clf, ps, sp)
 	print(time.time()-t0)
+	t1=time.time()
+	similarity = pairwiseSimilarityBatch(original, current)
+	print(time.time()-t1)
+	t2=time.time()
+	perplexity = perplexityCalcBatch(current.tolist())
+	print(time.time()-t2)
+	t3=time.time()
+	perplexity = perplexityCalcBatchTest(current.tolist())
+	print(time.time()-t3)
+	print(f'Reward {polite + w_similarity*similarity + 100/perplexity}')
 	return polite + w_similarity*similarity + 100/perplexity
 
 def test():
 	one = np.array(['Hello from my side I must have called two thousand times','Pee pee oop lol poo poo','I just want to sip till the pain wears off', 'Hello world hello world hello world hello world'])	
 	two = np.array(['Hello from the other side I must have called one thousand times.','Pee pee oop lol poo poo','My name is Jim Harrison and welcome to my shop', 'Thank you'])
-	print(rlScore(one, two))
+	print(rlScoreTest(one, two))
 
-test()
+# test()
