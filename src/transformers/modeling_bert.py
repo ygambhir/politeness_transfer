@@ -26,7 +26,6 @@ import torch
 import torch.utils.checkpoint
 from torch import nn
 from torch.nn import CrossEntropyLoss, MSELoss
-from rlFunctionsBatch import rlScore
 from .activations import ACT2FN
 from .configuration_bert import BertConfig
 from .file_utils import (
@@ -54,6 +53,8 @@ from .modeling_utils import (
     prune_linear_layer,
 )
 from .utils import logging
+
+from rlFunctionsBatch import rlScore
 
 
 logger = logging.get_logger(__name__)
@@ -1073,6 +1074,7 @@ class BertLMHeadModel(BertPreTrainedModel):
         next_tokens = next_tokens.view(N,L)
         decoded_strs = []
         input_strs = []
+        print('attention mask shape', attention_mask.shape)
         for i in range(N):
             decode_str = tokenizer.decode(next_tokens[i], skip_special_tokens=True).replace('.', '').replace(';', '')
             decoded_strs.append(decode_str)
@@ -1088,9 +1090,10 @@ class BertLMHeadModel(BertPreTrainedModel):
             p_scores = prediction_scores.clone()
             if use_RL:
                 reward = calculate_reward(prediction_scores)
+                prediction_scores = prediction_scores*attention_mask.unsqueeze(2)
                 prediction_scores += torch.abs(torch.min(p_scores))
                 prediction_scores = prediction_scores.clamp(min=eps)
-                lm_loss = torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward))
+                lm_loss = -torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward)) / N
             else:
                 labels = labels[:, 1:].contiguous()
                 loss_fct = CrossEntropyLoss()
