@@ -436,7 +436,7 @@ class GenerationMixin:
         num_return_sequences = (
             num_return_sequences if num_return_sequences is not None else self.config.num_return_sequences
         )
-        print('in generate')
+
         pad_token_id = pad_token_id if pad_token_id is not None else self.config.pad_token_id
         bos_token_id = bos_token_id if bos_token_id is not None else self.config.bos_token_id
         eos_token_id = eos_token_id if eos_token_id is not None else self.config.eos_token_id
@@ -800,12 +800,12 @@ class GenerationMixin:
         sequence_lengths, unfinished_sequences, cur_len = self._init_sequence_length_for_generation(
             input_ids, max_length
         )
-
         # auto-regressive generation
+        all_token_probs = []
+        N, _ = input_ids.shape
         while cur_len < max_length:
             # prepare model inputs
             model_inputs = self.prepare_inputs_for_generation(input_ids, **model_kwargs)
-
             # forward pass to get next token
             outputs = self(**model_inputs, return_dict=True)
             next_token_logits = outputs.logits[:, -1, :]
@@ -816,8 +816,11 @@ class GenerationMixin:
 
             # sample
             probs = F.softmax(scores, dim=-1)
+            #print('probs shape', probs.shape)
             next_tokens = torch.multinomial(probs, num_samples=1).squeeze(1)
-
+            #print('next tokens', next_tokens.shape)
+            #print('next token probs', probs[range(N), next_tokens].shape)
+            all_token_probs.append(probs[range(N), next_tokens].unsqueeze(1))
             # add code that transfomers next_tokens to tokens_to_add
             if eos_token_id is not None:
                 assert pad_token_id is not None, "If eos_token_id is defined, make sure that pad_token_id is defined."
@@ -842,7 +845,7 @@ class GenerationMixin:
                 outputs, model_kwargs, is_encoder_decoder=self.config.is_encoder_decoder
             )
 
-        return input_ids
+        return (input_ids, torch.cat(all_token_probs, dim=1))
 
     def beam_search(
         self,
