@@ -352,7 +352,6 @@ class EncoderDecoderModel(PreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
-        tokenizer=None,
         **kwargs,
     ):
         r"""

@@ -1040,7 +1040,7 @@ class BertLMHeadModel(BertPreTrainedModel):
             >>> config.is_decoder = True
             >>> model = BertLMHeadModel.from_pretrained('bert-base-cased', config=config, return_dict=True)
 
-            >>> inputs = tokenizer("Hello, my dog is cute", return_tensors="pt")
+            >>> inputs = mode("Hello, my dog is cute", return_tensors="pt")
             >>> outputs = model(**inputs)
 
             >>> prediction_logits = outputs.logits
@@ -1074,30 +1074,42 @@ class BertLMHeadModel(BertPreTrainedModel):
         next_tokens = next_tokens.view(N,L)
         decoded_strs = []
         input_strs = []
-        print('attention mask shape', attention_mask.shape)
-        for i in range(N):
-            decode_str = tokenizer.decode(next_tokens[i], skip_special_tokens=True).replace('.', '').replace(';', '')
-            decoded_strs.append(decode_str)
-            input_strs.append(tokenizer.decode(input_ids[i], skip_special_tokens=True))
-        # Note: Modify the forward pass to take in string
-        s = time.time()
-        reward = rlScore(np.array(input_strs), np.array(decoded_strs))
+        # print('attention mask shape', attention_mask.shape)
+        if tokenizer is not None:
+            for i in range(N):
+                decode_str = tokenizer.decode(next_tokens[i], skip_special_tokens=True)#.replace('.', '').replace(';', '')
+                decoded_strs.append(decode_str)
+                input_strs.append(tokenizer.decode(input_ids[i], skip_special_tokens=True))
+            # Note: Modify the forward pass to take in string
+            s = time.time()
+            reward = rlScore(np.array(input_strs), np.array(decoded_strs))
+            reward = torch.from_numpy(reward).to('cuda')
         #print('time for reward', time.time() - s)
         #print(reward)
         if labels is not None:
             # we are doing next-token prediction; shift prediction scores and input ids by one
             shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
             p_scores = prediction_scores.clone()
+            # if use_RL:
+            #     reward = calculate_reward(prediction_scores)
+            #     prediction_scores = prediction_scores*attention_mask.unsqueeze(2)
+            #     prediction_scores += torch.abs(torch.min(p_scores))
+            #     prediction_scores = prediction_scores.clamp(min=eps)
+            #     lm_loss = -torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward)) / N
             if use_RL:
-                reward = calculate_reward(prediction_scores)
+                # reward = calculate_reward(prediction_scores)
                 prediction_scores = prediction_scores*attention_mask.unsqueeze(2)
-                prediction_scores += torch.abs(torch.min(p_scores))
+                # prediction_scores += torch.abs(torch.min(p_scores))
                 prediction_scores = prediction_scores.clamp(min=eps)
-                lm_loss = -torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward)) / N
+                lm_loss = -torch.sum(torch.log(prediction_scores.T)*reward) / (V*L*N)
+                # labels = labels[:, 1:].contiguous()
+                # loss_fct = CrossEntropyLoss()
+                # lm_loss = loss_fct(shifted_prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
             else:
                 labels = labels[:, 1:].contiguous()
                 loss_fct = CrossEntropyLoss()
                 lm_loss = loss_fct(shifted_prediction_scores.view(-1, self.config.vocab_size), labels.view(-1))
+                
         if not return_dict:
             output = (prediction_scores,) + outputs[2:]
             return ((lm_loss,) + output) if lm_loss is not None else output
