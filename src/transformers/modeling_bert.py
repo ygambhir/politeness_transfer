@@ -54,7 +54,7 @@ from .modeling_utils import (
 )
 from .utils import logging
 
-from rlFunctionsBatch import rlScore
+#from rlFunctionsBatch import rlScore
 
 
 logger = logging.get_logger(__name__)
@@ -1063,9 +1063,11 @@ class BertLMHeadModel(BertPreTrainedModel):
         sequence_output = outputs[0]
         prediction_scores = self.cls(sequence_output)
         lm_loss = None
-        use_RL = True
+        use_RL = False
         eps = 1e-9
 
+        print('input shape', input_ids.shape)
+        print('prediction scores', prediction_scores.shape)
         #next_tokens = torch.argmax(prediction_scores, dim=-1)
         probs = nn.functional.softmax(prediction_scores, dim=-1)
         N, L, V = probs.shape
@@ -1074,26 +1076,26 @@ class BertLMHeadModel(BertPreTrainedModel):
         next_tokens = next_tokens.view(N,L)
         decoded_strs = []
         input_strs = []
-        print('attention mask shape', attention_mask.shape)
         for i in range(N):
             decode_str = tokenizer.decode(next_tokens[i], skip_special_tokens=True).replace('.', '').replace(';', '')
             decoded_strs.append(decode_str)
             input_strs.append(tokenizer.decode(input_ids[i], skip_special_tokens=True))
         # Note: Modify the forward pass to take in string
         s = time.time()
-        reward = rlScore(np.array(input_strs), np.array(decoded_strs))
+        #reward = rlScore(np.array(input_strs), np.array(decoded_strs))
         #print('time for reward', time.time() - s)
         #print(reward)
         if labels is not None:
             # we are doing next-token prediction; shift prediction scores and input ids by one
             shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
+            print('shifted prediction scores', shifted_prediction_scores.shape)
             p_scores = prediction_scores.clone()
             if use_RL:
-                reward = calculate_reward(prediction_scores)
                 prediction_scores = prediction_scores*attention_mask.unsqueeze(2)
                 prediction_scores += torch.abs(torch.min(p_scores))
                 prediction_scores = prediction_scores.clamp(min=eps)
-                lm_loss = -torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward)) / N
+                #print(torch.tensor(reward).shape)
+                #lm_loss = -torch.sum(torch.log(prediction_scores.view(N, L*V))*torch.tensor(reward)[:, 0]) / N
             else:
                 labels = labels[:, 1:].contiguous()
                 loss_fct = CrossEntropyLoss()
@@ -1117,9 +1119,6 @@ class BertLMHeadModel(BertPreTrainedModel):
             attention_mask = input_ids.new_ones(input_shape)
 
         return {"input_ids": input_ids, "attention_mask": attention_mask}
-
-def calculate_reward(scores):
-    return 2
 
 @add_start_docstrings("""Bert Model with a `language modeling` head on top. """, BERT_START_DOCSTRING)
 class BertForMaskedLM(BertPreTrainedModel):

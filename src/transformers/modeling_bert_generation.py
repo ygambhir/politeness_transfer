@@ -437,6 +437,7 @@ class BertGenerationDecoder(BertGenerationPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        tokenizer=None
     ):
         r"""
         encoder_hidden_states  (:obj:`torch.FloatTensor` of shape :obj:`(batch_size, sequence_length, hidden_size)`, `optional`):
@@ -488,11 +489,13 @@ class BertGenerationDecoder(BertGenerationPreTrainedModel):
         sequence_output = outputs[0]
         prediction_scores = self.lm_head(sequence_output)
 
-        use_RL = True
+        use_RL = False
         lm_loss = None
         if labels is not None:
             # we are doing next-token prediction; shift prediction scores and input ids by one
             shifted_prediction_scores = prediction_scores[:, :-1, :].contiguous()
+            print('pred score', prediction_scores.shape)
+            print('shifted score', shifted_prediction_scores.shape)
             if use_RL:
                 reward = calculate_reward(prediction_scores)
                 lm_loss = torch.sum(torch.log(prediction_scores)*reward)
