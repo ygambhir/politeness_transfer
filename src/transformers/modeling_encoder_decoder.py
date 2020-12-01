@@ -413,7 +413,6 @@ class EncoderDecoderModel(PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            tokenizer=tokenizer,
             **kwargs_decoder,
         )
 

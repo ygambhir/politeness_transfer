@@ -146,8 +146,8 @@ def rlScore(original, current):
 	polite = predictTextBatch(current.tolist(), clf, ps, sp)
 	similarity = pairwiseSimilarityBatch(original, current)
 	perplexity = perplexityCalc(current.tolist())
-	# print(f'Reward polite: {polite}, sim: {similarity}, perplexity:{perplexity}, total: {polite + w_similarity*similarity + 100/perplexity}, time: {t1-t0}\n')
-	return polite + w_similarity*similarity + 100/perplexity
+	# print(f'Reward polite: {polite}, sim: {similarity}, perplexity:{perplexity}, total: {polite + w_similarity*similarity + 100/perplexity}')
+	return 1/(polite) + 1/(w_similarity*similarity) + 1/perplexity
 
 def rlScoreTest(original, current):
 	w_pol = 1000
