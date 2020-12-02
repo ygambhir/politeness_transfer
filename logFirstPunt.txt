@@ -1,0 +1,15 @@
+Epoch 0 loss inf, avg loss inf, reward inf
+Epoch 1 loss 19.38344358670959, avg loss inf, reward 10.64638590085754
+Epoch 2 loss 15.889657674510534, avg loss inf, reward 7.544822393138465
+Epoch 3 loss 16.25085493180424, avg loss inf, reward 7.622000180217327
+Epoch 4 loss 17.66907909253414, avg loss inf, reward 8.838947561772423
+Epoch 5 loss 15.5662095738375, avg loss inf, reward 7.071717996689062
+Epoch 6 loss 17.509671048996776, avg loss inf, reward 8.471278028366893
+Epoch 7 loss 18.07733000632795, avg loss inf, reward 9.302456272807444
+Epoch 8 loss 15.527138482717636, avg loss inf, reward 7.035203706411484
+Epoch 9 loss 15.911290018944651, avg loss inf, reward 7.307755320458324
+Epoch 10 loss 18.19496182772702, avg loss inf, reward 9.622036260100069
+Epoch 11 loss 16.902447548973733, avg loss inf, reward 7.775585976708106
+Epoch 12 loss 16.710419843235297, avg loss inf, reward 7.854008863010688
+Epoch 13 loss 17.663428641389576, avg loss inf, reward 8.888895369600025
+Epoch 14 loss 17.361861956094693, avg loss inf, reward 8.390867960428187

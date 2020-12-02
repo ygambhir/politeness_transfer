@@ -352,8 +352,7 @@ class EncoderDecoderModel(PreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
-        tokenizer=None,
-        **kwargs
+        **kwargs,
     ):
         r"""
         Returns:
@@ -414,7 +413,6 @@ class EncoderDecoderModel(PreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
-            tokenizer=tokenizer,
             **kwargs_decoder,
         )
 

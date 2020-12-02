@@ -13,7 +13,9 @@ from scipy.sparse import csr_matrix
 from sklearn.metrics import classification_report
 import spacy
 import time
+print("about to gpt2")
 from transformers import GPT2TokenizerFast, GPT2LMHeadModel
+print('done')
 from tqdm import tqdm
 import torch
 from fuzzywuzzy import fuzz
@@ -24,7 +26,7 @@ from torch.nn import CrossEntropyLoss
 #######################################################################
 # LOAD AND TRAIN POLITE CLASSIFIER
 #######################################################################
-
+print('Imports done')
 wiki_corpus = Corpus(download("wikipedia-politeness-corpus"))
 parser = TextParser(verbosity=1000)
 wiki_corpus = parser.transform(wiki_corpus)
@@ -38,7 +40,7 @@ print("train size = {}, test size = {}".format(len(train_corpus.get_utterance_id
 clf = Classifier(obj_type="utterance",pred_feats=["politeness_strategies"], labeller=lambda utt: utt.meta['Binary'] == 1)
 clf.fit(train_corpus)
 test_pred = clf.transform(test_corpus)
-sp = spacy.load('en', disable=['ner'])
+sp = spacy.load('en_core_web_lg', disable=['ner'])
 pred2label = {1: "polite", 0: "impolite"}
 clf.accuracy(test_corpus)
 
@@ -46,7 +48,7 @@ clf.accuracy(test_corpus)
 # LOAD GPT2 FOR PERPLEXITY CALCULATION
 #######################################################################
 
-device = 'cpu'
+device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
 model_id = 'gpt2-medium'
 model = GPT2LMHeadModel.from_pretrained(model_id, return_dict=True).to(device)
 tokenizer = GPT2TokenizerFast.from_pretrained(model_id)
@@ -91,7 +93,7 @@ def predictTextBatch(txt, model, politenessStrategies, spacyL):
 
 def perplexityCalc(current):
 	test = current
-	encodings = tokenizer(test.tolist(), return_tensors='pt', padding=True)
+	encodings = tokenizer(test, return_tensors='pt', padding=True)
 	input_ids = encodings.input_ids.to(device)
 	mask = encodings.attention_mask.to(device)
 
@@ -143,9 +145,9 @@ def rlScore(original, current):
 	w_lm = .1
 	polite = predictTextBatch(current.tolist(), clf, ps, sp)
 	similarity = pairwiseSimilarityBatch(original, current)
-	perplexity = perplexityCalcBatchTest(current.tolist())
-	# print(f'Reward polite: {polite}, sim: {similarity}, perplexity:{perplexity}, total: {polite + w_similarity*similarity + 100/perplexity}, time: {t1-t0}\n')
-	return polite + w_similarity*similarity + 100/perplexity
+	perplexity = perplexityCalc(current.tolist())
+	# print(f'Reward polite: {polite}, sim: {similarity}, perplexity:{perplexity}, total: {polite + w_similarity*similarity + 100/perplexity}')
+	return 1/(polite) + 1/(w_similarity*similarity) + 1/perplexity
 
 def rlScoreTest(original, current):
 	w_pol = 1000
